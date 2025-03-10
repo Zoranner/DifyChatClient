@@ -2,6 +2,94 @@
 
 对话应用支持会话持久化，可将之前的聊天记录作为上下文进行回答，可适用于聊天/客服 AI 等。
 
+## 使用方法
+
+### 安装
+
+```bash
+dotnet add package DifyChatClient
+```
+
+### 快速开始
+
+1. 初始化客户端
+
+```csharp
+var client = new DifyClient("YOUR_API_KEY");
+```
+
+2. 发送消息
+
+```csharp
+// 简单对话
+var response = await client.SendMessageAsync(new ChatMessage 
+{
+    Query = "你好",
+    ResponseMode = "streaming",  // 支持 streaming 或 blocking
+    User = "user_123"           // 用户唯一标识
+});
+
+// 带上下文的对话
+var response = await client.SendMessageAsync(new ChatMessage 
+{
+    Query = "继续我们的对话",
+    ConversationId = "之前返回的conversation_id",  // 使用之前对话的ID
+    User = "user_123"
+});
+
+// 带文件的对话
+var response = await client.SendMessageAsync(new ChatMessage 
+{
+    Query = "分析这张图片",
+    Files = new[] {
+        new FileInfo {
+            Type = "image",
+            TransferMethod = "remote_url",
+            Url = "https://example.com/image.jpg"
+        }
+    },
+    User = "user_123"
+});
+```
+
+3. 处理响应
+
+```csharp
+// 流式响应
+await foreach (var chunk in response.GetStreamingResponse())
+{
+    switch (chunk.Event) 
+    {
+        case "message":
+            Console.Write(chunk.Answer);  // 打印部分回答
+            break;
+        case "message_end":
+            Console.WriteLine("\n回答结束");
+            break;
+        case "error":
+            Console.WriteLine($"错误: {chunk.Message}");
+            break;
+    }
+}
+
+// 阻塞响应
+var result = await response.GetBlockingResponse();
+Console.WriteLine(result.Answer);
+```
+
+4. 停止响应（仅流式模式）
+
+```csharp
+await client.StopResponseAsync(taskId, "user_123");
+```
+
+### 注意事项
+
+1. API Key 请妥善保管，建议存储在配置文件或环境变量中
+2. 用户标识(User)需要保证在应用内唯一
+3. 建议使用流式响应模式(streaming)获得更好的体验
+4. 文件上传支持多种类型，包括图片、文档、音频等
+
 ### 基础 URL
 
 ```
