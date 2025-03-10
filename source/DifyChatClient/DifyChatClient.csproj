@@ -7,7 +7,7 @@
 		<RootNamespace>$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 		<AssemblyName>DifyChatClient</AssemblyName>
 		<Authors>Zoranner</Authors>
-		<AssemblyVersion>0.0.2</AssemblyVersion>
+		<AssemblyVersion>0.0.3</AssemblyVersion>
 		<Platforms>AnyCPU;x64;x86</Platforms>
 		<Copyright>$(Authors)</Copyright>
 		<Company>$(Authors)</Company>
