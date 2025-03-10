@@ -4,7 +4,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.1;net6.0;net8.0;</TargetFrameworks>
 		<Nullable>disable</Nullable>
-		<RootNamespace>Zoranink.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+		<RootNamespace>$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 		<AssemblyName>DifyChatClient</AssemblyName>
 		<Authors>Zoranner</Authors>
 		<AssemblyVersion>0.0.1</AssemblyVersion>

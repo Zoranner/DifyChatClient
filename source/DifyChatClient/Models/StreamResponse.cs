@@ -85,4 +85,4 @@ namespace DifyChatClient.Models
         [JsonPropertyName("message")]
         public string Message { get; set; }
     }
-} 
+}

@@ -12,26 +12,31 @@ namespace DifyChatClient
     /// <summary>
     /// Dify 聊天客户端
     /// </summary>
-    public class DifyClient : IDisposable
+    public class ChatClient : IDisposable
     {
-        private readonly HttpClient _httpClient;
-        private readonly string _baseUrl;
-        private bool _disposed;
+        private readonly HttpClient _HttpClient;
+        private readonly string _BaseUrl;
+        private bool _Disposed;
 
         /// <summary>
         /// 初始化 Dify 客户端
         /// </summary>
         /// <param name="apiKey">API密钥</param>
         /// <param name="baseUrl">基础URL，默认为 https://api.dify.ai/v1 </param>
-        public DifyClient(string apiKey, string baseUrl = "https://api.dify.ai/v1")
+        public ChatClient(string apiKey, string baseUrl = "https://api.dify.ai/v1")
         {
             if (string.IsNullOrEmpty(apiKey))
+            {
                 throw new ArgumentNullException(nameof(apiKey));
+            }
 
-            _baseUrl = baseUrl?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(baseUrl));
-            
-            _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            _BaseUrl = baseUrl?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(baseUrl));
+
+            _HttpClient = new HttpClient();
+            _HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                apiKey
+            );
         }
 
         /// <summary>
@@ -40,17 +45,28 @@ namespace DifyChatClient
         /// <param name="request">聊天消息请求</param>
         /// <param name="cancellationToken">取消令牌</param>
         /// <returns>聊天完成响应</returns>
-        public async Task<ChatCompletionResponse> SendMessageAsync(ChatMessageRequest request, CancellationToken cancellationToken = default)
+        public async Task<ChatCompletionResponse> SendMessageAsync(
+            ChatMessageRequest request,
+            CancellationToken cancellationToken = default
+        )
         {
             if (request == null)
+            {
                 throw new ArgumentNullException(nameof(request));
+            }
 
             request.ResponseMode = "blocking";
-            
-            var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/chat-messages", request, cancellationToken);
+
+            var response = await _HttpClient.PostAsJsonAsync(
+                $"{_BaseUrl}/chat-messages",
+                request,
+                cancellationToken
+            );
             response.EnsureSuccessStatusCode();
-            
-            return await response.Content.ReadFromJsonAsync<ChatCompletionResponse>(cancellationToken: cancellationToken);
+
+            return await response.Content.ReadFromJsonAsync<ChatCompletionResponse>(
+                cancellationToken: cancellationToken
+            );
         }
 
         /// <summary>
@@ -64,16 +80,26 @@ namespace DifyChatClient
             ChatMessageRequest request,
             Action<MessageStreamResponse> onMessage,
             Action<ErrorStreamResponse> onError = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default
+        )
         {
             if (request == null)
+            {
                 throw new ArgumentNullException(nameof(request));
+            }
+
             if (onMessage == null)
+            {
                 throw new ArgumentNullException(nameof(onMessage));
+            }
 
             request.ResponseMode = "streaming";
 
-            using var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/chat-messages", request, cancellationToken);
+            using var response = await _HttpClient.PostAsJsonAsync(
+                $"{_BaseUrl}/chat-messages",
+                request,
+                cancellationToken
+            );
             response.EnsureSuccessStatusCode();
 
             using var stream = await response.Content.ReadAsStreamAsync();
@@ -82,24 +108,32 @@ namespace DifyChatClient
             while (!reader.EndOfStream)
             {
                 if (cancellationToken.IsCancellationRequested)
+                {
                     break;
+                }
 
                 var line = await reader.ReadLineAsync();
                 if (string.IsNullOrEmpty(line) || !line.StartsWith("data: "))
+                {
                     continue;
+                }
 
-                var json = line.Substring(6);
+                var json = line[6..];
                 try
                 {
                     var baseResponse = JsonSerializer.Deserialize<StreamResponseBase>(json);
                     switch (baseResponse.Event)
                     {
                         case "message":
-                            var messageResponse = JsonSerializer.Deserialize<MessageStreamResponse>(json);
+                            var messageResponse = JsonSerializer.Deserialize<MessageStreamResponse>(
+                                json
+                            );
                             onMessage(messageResponse);
                             break;
                         case "error":
-                            var errorResponse = JsonSerializer.Deserialize<ErrorStreamResponse>(json);
+                            var errorResponse = JsonSerializer.Deserialize<ErrorStreamResponse>(
+                                json
+                            );
                             onError?.Invoke(errorResponse);
                             return;
                         case "message_end":
@@ -108,12 +142,14 @@ namespace DifyChatClient
                 }
                 catch (JsonException ex)
                 {
-                    onError?.Invoke(new ErrorStreamResponse
-                    {
-                        Status = 500,
-                        Code = "json_parse_error",
-                        Message = ex.Message
-                    });
+                    onError?.Invoke(
+                        new ErrorStreamResponse
+                        {
+                            Status = 500,
+                            Code = "json_parse_error",
+                            Message = ex.Message,
+                        }
+                    );
                     return;
                 }
             }
@@ -125,18 +161,28 @@ namespace DifyChatClient
         /// <param name="taskId">任务ID</param>
         /// <param name="user">用户标识</param>
         /// <param name="cancellationToken">取消令牌</param>
-        public async Task StopResponseAsync(string taskId, string user, CancellationToken cancellationToken = default)
+        public async Task StopResponseAsync(
+            string taskId,
+            string user,
+            CancellationToken cancellationToken = default
+        )
         {
             if (string.IsNullOrEmpty(taskId))
+            {
                 throw new ArgumentNullException(nameof(taskId));
-            if (string.IsNullOrEmpty(user))
-                throw new ArgumentNullException(nameof(user));
+            }
 
-            var response = await _httpClient.PostAsJsonAsync(
-                $"{_baseUrl}/chat-messages/{taskId}/stop",
+            if (string.IsNullOrEmpty(user))
+            {
+                throw new ArgumentNullException(nameof(user));
+            }
+
+            var response = await _HttpClient.PostAsJsonAsync(
+                $"{_BaseUrl}/chat-messages/{taskId}/stop",
                 new { user },
-                cancellationToken);
-            
+                cancellationToken
+            );
+
             response.EnsureSuccessStatusCode();
         }
 
@@ -155,14 +201,15 @@ namespace DifyChatClient
         /// <param name="disposing">是否正在释放</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposed)
+            if (!_Disposed)
             {
                 if (disposing)
                 {
-                    _httpClient?.Dispose();
+                    _HttpClient?.Dispose();
                 }
-                _disposed = true;
+
+                _Disposed = true;
             }
         }
     }
-} 
+}

@@ -80,4 +80,4 @@ namespace DifyChatClient.Models
         [JsonPropertyName("upload_file_id")]
         public string UploadFileId { get; set; }
     }
-} 
+}

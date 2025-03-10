@@ -194,4 +194,4 @@ namespace DifyChatClient.Models
         [JsonPropertyName("content")]
         public string Content { get; set; }
     }
-} 
+}
